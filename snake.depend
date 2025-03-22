@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1742396992 source:d:\snake\main.cpp
+	<SDL.h>
+	<SDL_image.h>
+	<vector>
+	<ctime>
+	<cstdlib>
+	<iostream>
+
