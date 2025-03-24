@@ -11,6 +11,7 @@ const int SCREEN_HEIGHT = 600;
 const int GRID_SIZE = 20;
 
 enum Direction { UP, DOWN, LEFT, RIGHT };
+enum GameState { MENU, PLAYING };
 
 struct Point {
     int x, y;
@@ -28,8 +29,12 @@ private:
     SDL_Texture* snakeTexture;
     SDL_Texture* foodTexture;
     SDL_Texture* wallTexture;
+    SDL_Texture* menuBackground;
+    SDL_Texture* newGameButton;
+    SDL_Texture* continueButton;
 
     bool running;
+    GameState gameState;
     Direction direction;
     std::vector<Point> snake;
     std::vector<Point> walls;
@@ -43,6 +48,7 @@ private:
     void Reset();
     void SpawnFood();
     void CreateWalls();
+    void ShowMenu();
 };
 
 // =========================
@@ -55,18 +61,26 @@ SnakeGame::SnakeGame() {
     window = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+    menuBackground = LoadTexture("menu_bg.png");
+    newGameButton = LoadTexture("new_game.png");
+    continueButton = LoadTexture("continue.png");
     snakeTexture = LoadTexture("snake.png");
     foodTexture = LoadTexture("food.png");
     wallTexture = LoadTexture("wall.png");
 
-    if (!snakeTexture || !foodTexture || !wallTexture) {
+    if (!menuBackground || !newGameButton || !continueButton ||!snakeTexture || !foodTexture || !wallTexture) {
         std::cerr << "Failed to load textures!" << std::endl;
     }
+    gameState = MENU;
+    running = true;
 
     Reset();
 }
 
 SnakeGame::~SnakeGame() {
+    SDL_DestroyTexture(menuBackground);
+    SDL_DestroyTexture(newGameButton);
+    SDL_DestroyTexture(continueButton);
     SDL_DestroyTexture(snakeTexture);
     SDL_DestroyTexture(foodTexture);
     SDL_DestroyTexture(wallTexture);
@@ -102,6 +116,45 @@ void SnakeGame::Reset() {
     CreateWalls();
     running = true;
 }
+void SnakeGame::ShowMenu() {
+    bool inMenu = true;
+    SDL_Event event;
+
+    while (inMenu) {
+        SDL_RenderClear(renderer);
+        SDL_Rect bgRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+        SDL_RenderCopy(renderer, menuBackground, nullptr, &bgRect);
+
+        SDL_Rect newGameRect = { SCREEN_WIDTH / 3, 200, 250, 80 };
+        SDL_RenderCopy(renderer, newGameButton, nullptr, &newGameRect);
+
+        SDL_Rect continueRect = { SCREEN_WIDTH / 3, 320, 250, 80 };
+        SDL_RenderCopy(renderer, continueButton, nullptr, &continueRect);
+
+        SDL_RenderPresent(renderer);
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+                inMenu = false;
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int x = event.button.x;
+                int y = event.button.y;
+
+                if (x > newGameRect.x && x < newGameRect.x + newGameRect.w && y > newGameRect.y && y < newGameRect.y + newGameRect.h) {
+                    Reset();
+                    gameState = PLAYING;
+                    inMenu = false;
+                }
+                if (x > continueRect.x && x < continueRect.x + continueRect.w && y > continueRect.y && y < continueRect.y + continueRect.h) {
+                    gameState = PLAYING;
+                    inMenu = false;
+                }
+            }
+        }
+    }
+}
 
 void SnakeGame::CreateWalls() {
     walls.clear();
@@ -120,23 +173,24 @@ void SnakeGame::CreateWalls() {
 
 void SnakeGame::SpawnFood() {
     srand(time(0));
-
     bool validPosition = false;
-    while (!validPosition) {
-        food.x = (rand() % (SCREEN_WIDTH / GRID_SIZE)) * GRID_SIZE;
-        food.y = (rand() % (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE;
 
-        // Kiểm tra xem thức ăn có nằm trên tường không
-        validPosition = true;
-        for (const auto& wall : walls) {
-            if (food.x == wall.x && food.y == wall.y) {
+    while (!validPosition) {
+        // Đặt thức ăn trong khoảng an toàn, tránh tường
+        food.x = (rand() % ((SCREEN_WIDTH / GRID_SIZE) - 2) + 1) * GRID_SIZE;
+        food.y = (rand() % ((SCREEN_HEIGHT / GRID_SIZE) - 2) + 1) * GRID_SIZE;
+
+        validPosition = true;  // Mặc định vị trí hợp lệ, kiểm tra tiếp
+
+        // Kiểm tra xem thức ăn có trùng với thân rắn không
+        for (auto& segment : snake) {
+            if (segment.x == food.x && segment.y == food.y) {
                 validPosition = false;
                 break;
             }
         }
     }
 }
-
 
 // =========================
 //  Xử lý nhập từ bàn phím
@@ -228,11 +282,16 @@ void SnakeGame::Render() {
 //  Vòng lặp chính
 // =========================
 void SnakeGame::Run() {
+    ShowMenu();
     while (running) {
-        ProcessInput();
-        Update();
-        Render();
-        SDL_Delay(100);
+        if (gameState == MENU) {
+            ShowMenu();
+        } else if (gameState == PLAYING) {
+            ProcessInput();
+            Update();
+            Render();
+            SDL_Delay(100);
+        }
     }
 }
 
