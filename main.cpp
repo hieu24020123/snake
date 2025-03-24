@@ -1,9 +1,11 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <vector>
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
+#include<fstream>
 
 // Cấu hình màn hình
 const int SCREEN_WIDTH = 800;
@@ -32,6 +34,9 @@ private:
     SDL_Texture* menuBackground;
     SDL_Texture* newGameButton;
     SDL_Texture* continueButton;
+    Mix_Music* backgroundMusic;
+    Mix_Chunk* eatSound;
+    Mix_Chunk* loseSound;
 
     bool running;
     GameState gameState;
@@ -57,6 +62,7 @@ private:
 SnakeGame::SnakeGame() {
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048); // Thêm dòng này
 
     window = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -67,9 +73,17 @@ SnakeGame::SnakeGame() {
     snakeTexture = LoadTexture("snake.png");
     foodTexture = LoadTexture("food.png");
     wallTexture = LoadTexture("wall.png");
+    backgroundMusic = Mix_LoadMUS("beach.mp3");
+    eatSound = Mix_LoadWAV("eat.mp3");
+    loseSound=Mix_LoadWAV("lose.mp3");
 
     if (!menuBackground || !newGameButton || !continueButton ||!snakeTexture || !foodTexture || !wallTexture) {
         std::cerr << "Failed to load textures!" << std::endl;
+    }
+    if (!backgroundMusic || !eatSound || !loseSound) {
+        std::cerr << "Failed to load music: " << Mix_GetError() << std::endl;
+    } else {
+        Mix_PlayMusic(backgroundMusic, -1); // Phát nhạc lặp vô hạn
     }
     gameState = MENU;
     running = true;
@@ -86,6 +100,9 @@ SnakeGame::~SnakeGame() {
     SDL_DestroyTexture(wallTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    Mix_FreeChunk(eatSound);
+    Mix_FreeChunk(loseSound);
+    Mix_CloseAudio(); // Tắt âm thanh
     IMG_Quit();
     SDL_Quit();
 }
@@ -207,6 +224,10 @@ void SnakeGame::ProcessInput() {
                 case SDLK_DOWN: if (direction != UP) direction = DOWN; break;
                 case SDLK_LEFT: if (direction != RIGHT) direction = LEFT; break;
                 case SDLK_RIGHT: if (direction != LEFT) direction = RIGHT; break;
+                case SDLK_SPACE: // Nhấn Space để quay lại menu
+                    if (gameState == PLAYING) {
+                        gameState = MENU;
+                    } break;
             }
         }
     }
@@ -228,20 +249,25 @@ void SnakeGame::Update() {
     // Kiểm tra va chạm với tường
     for (const auto& wall : walls) {
         if (newHead.x == wall.x && newHead.y == wall.y) {
-            running = false;
+            Mix_PlayChannel(-1, loseSound, 0);
+             gameState = MENU; // Quay về menu
+        return;
         }
     }
 
     // Kiểm tra va chạm với thân rắn
     for (int i = 1; i < snake.size(); ++i) {
         if (newHead.x == snake[i].x && newHead.y == snake[i].y) {
-            running = false;
+            Mix_PlayChannel(-1, loseSound, 0);
+             gameState = MENU; // Quay về menu
+        return;
         }
     }
 
     // Kiểm tra va chạm với thức ăn
     if (newHead.x == food.x && newHead.y == food.y) {
         grow = true;
+        Mix_PlayChannel(-1, eatSound, 0); // âm thanh lúc ăn
         SpawnFood();
     }
 
