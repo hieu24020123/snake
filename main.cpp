@@ -13,7 +13,7 @@ const int SCREEN_HEIGHT = 600;
 const int GRID_SIZE = 20;
 
 enum Direction { UP, DOWN, LEFT, RIGHT };
-enum GameState { MENU, PLAYING };
+enum GameState { MENU, PLAYING, PAUSED };
 
 struct Point {
     int x, y;
@@ -34,6 +34,8 @@ private:
     SDL_Texture* menuBackground;
     SDL_Texture* newGameButton;
     SDL_Texture* continueButton;
+    SDL_Texture* youlose;
+    SDL_Texture* load;
     Mix_Music* backgroundMusic;
     Mix_Chunk* eatSound;
     Mix_Chunk* loseSound;
@@ -54,6 +56,8 @@ private:
     void SpawnFood();
     void CreateWalls();
     void ShowMenu();
+    void SaveGame();
+    void LoadGame();
 };
 
 // =========================
@@ -73,11 +77,13 @@ SnakeGame::SnakeGame() {
     snakeTexture = LoadTexture("snake.png");
     foodTexture = LoadTexture("food.png");
     wallTexture = LoadTexture("wall.png");
+    youlose= LoadTexture("you_lose.png");
+    load= LoadTexture("load.png");
     backgroundMusic = Mix_LoadMUS("beach.mp3");
     eatSound = Mix_LoadWAV("eat.mp3");
     loseSound=Mix_LoadWAV("lose.mp3");
 
-    if (!menuBackground || !newGameButton || !continueButton ||!snakeTexture || !foodTexture || !wallTexture) {
+    if (!menuBackground || !newGameButton || !continueButton ||!snakeTexture || !foodTexture || !wallTexture || !youlose) {
         std::cerr << "Failed to load textures!" << std::endl;
     }
     if (!backgroundMusic || !eatSound || !loseSound) {
@@ -98,6 +104,8 @@ SnakeGame::~SnakeGame() {
     SDL_DestroyTexture(snakeTexture);
     SDL_DestroyTexture(foodTexture);
     SDL_DestroyTexture(wallTexture);
+    SDL_DestroyTexture(youlose);
+    SDL_DestroyTexture(load);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     Mix_FreeChunk(eatSound);
@@ -148,6 +156,9 @@ void SnakeGame::ShowMenu() {
         SDL_Rect continueRect = { SCREEN_WIDTH / 3, 320, 250, 80 };
         SDL_RenderCopy(renderer, continueButton, nullptr, &continueRect);
 
+         SDL_Rect loadRect = { SCREEN_WIDTH / 3, 440, 250, 80 };
+        SDL_RenderCopy(renderer, load, nullptr, &loadRect);
+
         SDL_RenderPresent(renderer);
 
         while (SDL_PollEvent(&event)) {
@@ -168,6 +179,12 @@ void SnakeGame::ShowMenu() {
                     gameState = PLAYING;
                     inMenu = false;
                 }
+                 if (x > loadRect.x && x < loadRect.x + loadRect.w && y > loadRect.y && y < loadRect.y + loadRect.h) {
+                    LoadGame();
+                    gameState = PLAYING;
+                    inMenu = false;
+                }
+
             }
         }
     }
@@ -228,6 +245,9 @@ void SnakeGame::ProcessInput() {
                     if (gameState == PLAYING) {
                         gameState = MENU;
                     } break;
+                case SDLK_s:
+                    SaveGame();
+                    break;
             }
         }
     }
@@ -250,6 +270,13 @@ void SnakeGame::Update() {
     for (const auto& wall : walls) {
         if (newHead.x == wall.x && newHead.y == wall.y) {
             Mix_PlayChannel(-1, loseSound, 0);
+    for (int i = 0; i < 5; i++) {
+            SDL_RenderClear(renderer);
+            SDL_Rect ylRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+            SDL_RenderCopy(renderer, youlose, nullptr, &ylRect);
+            SDL_RenderPresent(renderer); // Cập nhật màn hình
+            SDL_Delay(200);
+        }
              gameState = MENU; // Quay về menu
         return;
         }
@@ -259,6 +286,13 @@ void SnakeGame::Update() {
     for (int i = 1; i < snake.size(); ++i) {
         if (newHead.x == snake[i].x && newHead.y == snake[i].y) {
             Mix_PlayChannel(-1, loseSound, 0);
+            for (int i = 0; i < 5; i++) {
+            SDL_RenderClear(renderer); // Xóa màn hình trước khi vẽ
+            SDL_Rect ylRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+            SDL_RenderCopy(renderer, youlose, nullptr, &ylRect);
+            SDL_RenderPresent(renderer); // Cập nhật màn hình
+            SDL_Delay(200);
+        }
              gameState = MENU; // Quay về menu
         return;
         }
@@ -320,9 +354,55 @@ void SnakeGame::Run() {
         }
     }
 }
+void SnakeGame::SaveGame() {
+    std::ofstream file("savegame.txt");
+    if (file.is_open()) {
+        file << direction << " " << food.x << " " << food.y << " " << snake.size() << "\n";
+        for (const auto& segment : snake) {
+            file << segment.x << " " << segment.y << "\n";
+        }
+        file.close();
+    }
+}
+void SnakeGame::LoadGame() {
+    std::ifstream file("savegame.txt");
+    if (!file.is_open()) {
+        std::cerr << "Không thể mở file savegame.txt!\n";
+        return;
+    }
+
+    int snakeSize;
+    int dir;
+
+    if (!(file >> dir >> food.x >> food.y >> snakeSize)) {
+        std::cerr << "Lỗi đọc dữ liệu từ file!\n";
+        return;
+    }
+
+    // Kiểm tra giá trị hợp lệ
+    if (dir < UP || dir > RIGHT || snakeSize <= 0) {
+        std::cerr << "Dữ liệu trong file không hợp lệ!\n";
+        return;
+    }
+
+    direction = static_cast<Direction>(dir);
+    snake.clear();
+
+    for (int i = 0; i < snakeSize; i++) {
+        Point segment;
+        if (!(file >> segment.x >> segment.y)) {
+            std::cerr << "Lỗi khi đọc vị trí của rắn!\n";
+            return;
+        }
+        snake.push_back(segment);
+    }
+
+    file.close();
+    grow = false;  // Đảm bảo trạng thái đúng sau khi tải
+}
 
 // =========================
-//  Hàm `main`
+//  Hàm main
 // =========================
 int main(int argc, char* argv[]) {
     SnakeGame game;
