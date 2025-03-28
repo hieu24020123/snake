@@ -32,7 +32,14 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="draw.cpp" />
+		<Unit filename="khoi_tao_va _giai _phong.cpp" />
+		<Unit filename="load_image.cpp" />
+		<Unit filename="load_save.cpp" />
+		<Unit filename="logic_game.cpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="menu.cpp" />
+		<Unit filename="snakegame.h" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

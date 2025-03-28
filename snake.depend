@@ -1,9 +1,32 @@
 # depslib dependency file v1.0
-1742396992 source:d:\snake\main.cpp
+1743157599 source:d:\snake\main.cpp
+	"snakegame.h"
+
+1743157599 source:d:\snake\draw.cpp
+	"snakegame.h"
+
+1743157599 d:\snake\snakegame.h
 	<SDL.h>
 	<SDL_image.h>
+	<SDL_mixer.h>
 	<vector>
 	<ctime>
 	<cstdlib>
 	<iostream>
+	<fstream>
+
+1743157599 source:d:\snake\khoi_tao_va _giai _phong.cpp
+	"snakegame.h"
+
+1743157599 source:d:\snake\load_image.cpp
+	"snakegame.h"
+
+1743157599 source:d:\snake\load_save.cpp
+	"snakegame.h"
+
+1743157683 source:d:\snake\logic_game.cpp
+	"snakegame.h"
+
+1743157599 source:d:\snake\menu.cpp
+	"snakegame.h"
 
