@@ -21,10 +21,10 @@ SnakeGame::SnakeGame() {
     loseSound=Mix_LoadWAV("lose.mp3");
 
     if (!menuBackground || !newGameButton || !continueButton ||!snakeTexture || !foodTexture || !wallTexture || !youlose) {
-        std::cerr << "Failed to load textures!" << std::endl;
+        cerr << "Failed to load textures!" << endl;
     }
     if (!backgroundMusic || !eatSound || !loseSound) {
-        std::cerr << "Failed to load music: " << Mix_GetError() << std::endl;
+        cerr << "Failed to load music: " << Mix_GetError() << endl;
     } else {
         Mix_PlayMusic(backgroundMusic, -1); // Phát nhạc lặp vô hạn
     }

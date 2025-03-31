@@ -1,4 +1,5 @@
 #include"snakegame.h"
+// hàm tạo giao diện menu
 void SnakeGame::ShowMenu() {
     bool inMenu = true;
     SDL_Event event;

@@ -27,6 +27,7 @@ void SnakeGame::SpawnFood() {
         }
     }
 }
+// hàm xử lý đầu vào
 void SnakeGame::ProcessInput() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {

@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include<fstream>
-
+using namespace std;
 // Cấu hình màn hình
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;

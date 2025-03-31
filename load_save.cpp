@@ -1,6 +1,7 @@
 #include"snakegame.h"
+// hàm lưu game
 void SnakeGame::SaveGame() {
-    std::ofstream file("savegame.txt");
+    ofstream file("savegame.txt");
     if (file.is_open()) {
         file << direction << " " << food.x << " " << food.y << " " << snake.size() << "\n";
         for (const auto& segment : snake) {
@@ -9,13 +10,14 @@ void SnakeGame::SaveGame() {
         file.close();
     }
 }
+// hàm tải game
 void SnakeGame::LoadGame() {
-    std::ifstream file("savegame.txt");
+    ifstream file("savegame.txt");
     int snakeSize;
     int dir;
 
     if (!(file >> dir >> food.x >> food.y >> snakeSize)) {
-        std::cerr << "Lỗi đọc dữ liệu từ file!\n";
+        cerr << "Lỗi đọc dữ liệu từ file!\n";
         return;
     }
 
@@ -25,7 +27,7 @@ void SnakeGame::LoadGame() {
     for (int i = 0; i < snakeSize; i++) {
         Point segment;
         if (!(file >> segment.x >> segment.y)) {
-            std::cerr << "Lỗi khi đọc vị trí của rắn!\n";
+            cerr << "Lỗi khi đọc vị trí của rắn!\n";
             return;
         }
         snake.push_back(segment);
